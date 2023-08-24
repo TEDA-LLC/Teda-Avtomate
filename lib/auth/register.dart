@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,7 +24,6 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _LoginPage extends State<RegisterPage> {
-
   //text controller for text field
   final TextEditingController _fioController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -31,7 +31,7 @@ class _LoginPage extends State<RegisterPage> {
   final TextEditingController _companyNameController = TextEditingController();
   final TextEditingController _positionController = TextEditingController();
 
-  var resString = StringEn();
+  var resString;
   var region = [];
   var country = [];
   var dropdownCountryList = ['Uzbekistan', 'Russia', 'USA'];
@@ -77,14 +77,18 @@ class _LoginPage extends State<RegisterPage> {
       if (response.statusCode >= 400) {
         final responseString = await response.stream.bytesToString();
         final encodedResp = json.decode(responseString) as Map<String, dynamic>;
-        showToast('Error', 'Remove background error: ${response.statusCode} : $responseString', Colors.red);
+        showToast(
+            'Error',
+            'Remove background error: ${response.statusCode} : $responseString',
+            Colors.red);
         throw Exception(encodedResp['errors'][0]['title']);
       }
 
       var responseData = await response.stream.toBytes();
       return responseData;
     } catch (err, stacktrace) {
-      showToast('Error', 'Remove background error: $err : $stacktrace', Colors.red);
+      showToast(
+          'Error', 'Remove background error: $err : $stacktrace', Colors.red);
       rethrow;
     }
   }
@@ -123,7 +127,9 @@ class _LoginPage extends State<RegisterPage> {
 
   Future<void> getRegion() async {
     var response = await http.get(
-      Uri.parse('$_url/api/region',),
+      Uri.parse(
+        '$_url/api/region',
+      ),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -145,7 +151,10 @@ class _LoginPage extends State<RegisterPage> {
         region = regions;
       });
     } else {
-      showToast('Error', 'Region not found ${response.statusCode} : ${response.body}', Colors.red);
+      showToast(
+          'Error',
+          'Region not found ${response.statusCode} : ${response.body}',
+          Colors.red);
       setState(() {
         region = [];
       });
@@ -153,13 +162,11 @@ class _LoginPage extends State<RegisterPage> {
   }
 
   Future<void> getCountry() async {
-    var response = await http.get(Uri.parse('$_url/api/country'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        }
-    );
+    var response = await http.get(Uri.parse('$_url/api/country'), headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    });
     if (response.statusCode == 200) {
       var data = json.decode(response.body);
       List<RegionModel> regions = [];
@@ -175,7 +182,10 @@ class _LoginPage extends State<RegisterPage> {
         country = regions;
       });
     } else {
-      showToast('Error', 'Country not found ${response.statusCode} : ${response.body}', Colors.red);
+      showToast(
+          'Error',
+          'Country not found ${response.statusCode} : ${response.body}',
+          Colors.red);
       setState(() {
         country = [];
       });
@@ -215,13 +225,12 @@ class _LoginPage extends State<RegisterPage> {
       final encodedResp = json.decode(responseString) as Map<String, dynamic>;
       throw Exception(encodedResp['errors'][0]['title']);
     }
-    if (response.statusCode == 200||response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       showToast('Success', 'User added', Colors.green);
       pushReplacement();
-    }else{
+    } else {
       showToast('Error', 'User not added', Colors.red);
     }
-
   }
 
   showBottomSheet(BuildContext context) {
@@ -317,29 +326,114 @@ class _LoginPage extends State<RegisterPage> {
         });
   }
 
-  showToast(String title,String message,Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.03),
-        //bottom margin of snackbar
-        margin: EdgeInsets.only(
-            bottom: MediaQuery.of(context).size.height * 0.05,
-            left: MediaQuery.of(context).size.width * 0.03,
-            right: MediaQuery.of(context).size.width * 0.03),
-        backgroundColor: color,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+  showToast(String title, String message, Color color) {
+    //android toast style for ios
+    if (Platform.isIOS) {
+      return showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              child: Text('Ok'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
         ),
-        //duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+    }
+    if (Platform.isAndroid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+          ),
+          closeIconColor: Colors.white,
+          backgroundColor: color,
+          showCloseIcon: true,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  //language menu button
+  showMenuLanguage() {
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          100, MediaQuery.of(context).size.height * 0.1, 0, 0),
+      items: [
+        const PopupMenuItem<String>(
+          child: Text('English'),
+          value: 'en',
+        ),
+        const PopupMenuItem<String>(
+          child: Text('Русский'),
+          value: 'ru',
+        ),
+        const PopupMenuItem<String>(
+          child: Text('O\'zbekcha'),
+          value: 'uz',
+        ),
+      ],
+      elevation: 8.0,
+    ).then<void>((String? itemSelected) {
+      if (itemSelected == null) return;
+      setState(() {
+        switch (itemSelected) {
+          case 'en':
+            setLanguage('en');
+            resString = StringEn();
+            break;
+          case 'ru':
+            setLanguage('ru');
+            resString = StringRu();
+            break;
+          case 'uz':
+            setLanguage('uz');
+            resString = StringUz();
+            break;
+        }
+      });
+    });
+  }
+
+  setLanguage(language) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', language);
+  }
+
+  getLanguage() async{
+    final prefs = await SharedPreferences.getInstance();
+    var language = prefs.getString('language');
+    if(language!.isNotEmpty){
+      setState(() {
+        switch (language) {
+          case 'en':
+            resString = StringEn();
+            break;
+          case 'ru':
+            resString = StringRu();
+            break;
+          case 'uz':
+            resString = StringUz();
+            break;
+        }
+      });
+    }
   }
 
   @override
   void initState() {
     WidgetsFlutterBinding.ensureInitialized();
     super.initState();
+    getLanguage();
     getRegion();
     getCountry();
     resString = StringEn();
@@ -361,393 +455,485 @@ class _LoginPage extends State<RegisterPage> {
     var h = MediaQuery.of(context).size.width;
 
     return Scaffold(
-        backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(height: h * 0.08),
-              Center(
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("assets/images/logo.jpg"),
+      backgroundColor: Colors.black,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(55), // here the desired height
+        child: AppBar(
+          backgroundColor: Colors.black,
+          elevation: 0,
+          actions: [
+            Row(
+              children: [
+                SizedBox(width: w * 0.03),
+                Container(
+                  width: w * 0.08,
+                  height: w * 0.08,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/images/logo.jpg'),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-              ),
-
-              Text(
-                resString.getRegisterNewUser,
-                style: TextStyle(
-                  fontSize: w * 0.05,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Row(
-                children: [
-                  SizedBox(width: w * 0.03),
-                  SizedBox(
-                    width: w * 0.7,
-                    height: h * 0.3,
-                    child: Column(
-                      children: [
-                        SizedBox(height: h * 0.02),
-                        //fio, email, phone number, photo
-                        Container(
-                          width: w * 0.9,
-                          height: h * 0.08,
-                          padding: EdgeInsets.only(left: w * 0.005),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey[200],
-                          ),
-                          child: Center(
-                            child: TextField(
-                              controller: _fioController,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: resString.getFio,
-                                hintStyle: TextStyle(
-                                  fontSize: w * 0.03,
-                                  color: Colors.grey,
-                                ),
-                                prefixIcon: Icon(
-                                  size: w * 0.04,
-                                  Icons.person,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: h * 0.02),
-                        Container(
-                          width: w * 0.9,
-                          height: h * 0.08,
-                          padding: EdgeInsets.only(left: w * 0.005),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey[200],
-                          ),
-                          child: Center(
-                            child: TextField(
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: resString.getEmail,
-                                hintStyle: TextStyle(
-                                  fontSize: w * 0.03,
-                                  color: Colors.grey,
-                                ),
-                                prefixIcon: Icon(
-                                  size: w * 0.04,
-                                  Icons.email,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: h * 0.02),
-                        Container(
-                          width: w * 0.9,
-                          height: h * 0.08,
-                          padding: EdgeInsets.only(left: w * 0.005),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey[200],
-                          ),
-                          child: Center(
-                            child: TextField(
-                              controller: _phoneNumberController,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                hintText: resString.getPhoneNumber,
-                                hintStyle: TextStyle(
-                                  fontSize: w * 0.03,
-                                  color: Colors.grey,
-                                ),
-                                prefixIcon: Icon(
-                                  size: w * 0.04,
-                                  Icons.phone,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                SizedBox(width: w * 0.03),
+                Text(
+                  resString.getTeda,
+                  style: TextStyle(
+                    fontSize: w * 0.05,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
-                  SizedBox(width: w * 0.03),
-                  SizedBox(
-                    width: w * 0.2,
-                    height: h * 0.3,
-                    child: Column(
-                      children: [
-                        const Expanded(child: SizedBox()),
-                        Container(
-                          width: w * 0.2,
-                          height: h * 0.28,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey[200],
+                ),
+              ],
+            ),
+            const Expanded(child: SizedBox()),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  showMenuLanguage();
+                  resString = StringEn();
+                });
+              },
+              icon: const Icon(Icons.language, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // //////////////////////////////////////////// //////////////////////////////////////////// //////////////////////////////////////////
+
+          Expanded(
+            child: Container(
+              width: w,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                color: Colors.deepPurple[800],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                      width: w,
+                      decoration: BoxDecoration(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                        color: Colors.deepPurple[800],
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: h * 0.03),
+                          Text(
+                            resString.getRegisterNewUser,
+                            style: TextStyle(
+                              fontSize: w * 0.04,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          SizedBox(height: h * 0.03),
+                          Stack(
                             children: [
-                              if (_originalFile != null)
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      showBottomSheet(context);
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(10),
-                                        image: DecorationImage(
-                                          image: FileImage(_originalFile!),
-                                          fit: BoxFit.cover,
+                              CircleAvatar(
+                                radius: w * 0.16,
+                                backgroundColor: Colors.white,
+                                backgroundImage: _resultedFile == null
+                                    ? null
+                                    : FileImage(_resultedFile!)
+                                        as ImageProvider,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    if (_resultedFile == null)
+                                      //empty image
+                                      IconButton(
+                                        onPressed: () {
+                                          showBottomSheet(context);
+                                        },
+                                        color: Colors.black87,
+                                        icon: Icon(
+                                          Icons.add_a_photo,
+                                          size: w * 0.07,
                                         ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (_resultedFile != null)
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: CircleAvatar(
+                                    radius: w * 0.05,
+                                    backgroundColor: Colors.grey[200],
+                                    child: IconButton(
+                                      onPressed: () {
+                                        showBottomSheet(context);
+                                      },
+                                      color: Colors.black87,
+                                      icon: Icon(
+                                        Icons.add_a_photo,
+                                        size: w * 0.05,
                                       ),
                                     ),
                                   ),
                                 ),
-                              if (_resultedFile == null &&
-                                  _originalFile == null)
-                                IconButton(
-                                  onPressed: () {
-                                    showBottomSheet(context);
-                                  },
-                                  color: Colors.grey,
-                                  icon: Icon(
-                                    Icons.add_a_photo,
-                                    size: w * 0.07,
-                                  ),
-                                ),
                             ],
                           ),
+                          SizedBox(height: h * 0.05),
+                        ],
+                      )),
+                  Expanded(
+                    child: Container(
+                      width: w,
+                      height: h,
+                      padding: EdgeInsets.only(top: h * 0.08),
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: w * 0.03),
-                ],
-              ),
-              SizedBox(height: h * 0.02),
+                        color: Colors.white,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            SizedBox(width: w * 0.05),
+                            SizedBox(height: h * 0.02),
+                            Container(
+                              width: w * 0.9,
+                              height: h * 0.1,
+                              padding: EdgeInsets.only(left: w * 0.005),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.grey[200],
+                              ),
+                              child: TextField(
+                                controller: _fioController,
+                                textInputAction: TextInputAction.next,
+                                keyboardType: TextInputType.name,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: resString.getFio,
+                                  hintStyle: TextStyle(
+                                    fontSize: w * 0.036,
+                                    color: Colors.grey,
+                                  ),
+                                  prefixIcon: Icon(
+                                    size: w * 0.06,
+                                    Icons.person,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: h * 0.02),
+                            Container(
+                              width: w * 0.9,
+                              height: h * 0.1,
+                              padding: EdgeInsets.only(left: w * 0.005),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.grey[200],
+                              ),
+                              child: Center(
+                                child: TextField(
+                                  controller: _emailController,
+                                  textInputAction: TextInputAction.next,
+                                  keyboardType: TextInputType.emailAddress,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: resString.getEmail,
+                                    hintStyle: TextStyle(
+                                      fontSize: w * 0.036,
+                                      color: Colors.grey,
+                                    ),
+                                    prefixIcon: Icon(
+                                      size: h * 0.06,
+                                      Icons.email,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
 
-              Row(
-                children: [
-                  SizedBox(width: w * 0.03),
-                  Radio(
-                    value: 'rezident',
-                    groupValue: selectedOption,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedOption = value!;
-                      });
-                    },
+                            SizedBox(height: h * 0.02),
+                            Container(
+                              width: w * 0.9,
+                              height: h * 0.1,
+                              padding: EdgeInsets.only(left: w * 0.005),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.grey[200],
+                              ),
+                              child: Center(
+                                child: TextField(
+                                  controller: _phoneNumberController,
+                                  textInputAction: TextInputAction.next,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: resString.getPhoneNumber,
+                                    hintStyle: TextStyle(
+                                      fontSize: w * 0.036,
+                                      color: Colors.grey,
+                                    ),
+                                    prefixIcon: Icon(
+                                      size: w * 0.06,
+                                      Icons.phone,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: w * 0.03),
+
+                            Row(
+                              children: [
+                                SizedBox(width: w * 0.03),
+                                Radio(
+                                  value: 'rezident',
+                                  groupValue: selectedOption,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedOption = value!;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                    resString.getRezident,
+                                    style: TextStyle(
+                                        fontSize: w * 0.03,
+                                        color: Colors.black)),
+                                SizedBox(width: w * 0.03),
+                                Radio(
+                                  value: 'nonrezident',
+                                  groupValue: selectedOption,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedOption = value!;
+                                    });
+                                  },
+                                ),
+                                Text(
+                                    resString.getNoRezident,
+                                    style: TextStyle(
+                                        fontSize: w * 0.03,
+                                        color: Colors.black)),
+                              ],
+                            ),
+                            SizedBox(height: h * 0.02),
+                            //if rezident selected then show region and country dropdown
+                            if (selectedOption == 'rezident')
+                              if (region.isNotEmpty)
+                                Container(
+                                  width: w * 0.9,
+                                  height: h * 0.1,
+                                  padding: EdgeInsets.only(
+                                      left: w * 0.02, right: w * 0.02),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    color: Colors.grey[200],
+                                  ),
+                                  child: Center(
+                                    child: DropdownButton(
+                                      underline: const SizedBox(),
+                                      isExpanded: true,
+                                      value: selectedCountry,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedCountry = value.toString();
+                                          countryIndex = dropdownCountryList
+                                              .indexOf(value!);
+                                        });
+                                      },
+                                      items: dropdownCountryList.map((e) {
+                                        return DropdownMenuItem(
+                                          value: e,
+                                          child: Text(e),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                            if (selectedOption != 'rezident')
+                              if (region.isNotEmpty)
+                                Container(
+                                  width: w * 0.9,
+                                  height: h * 0.1,
+                                  padding: EdgeInsets.only(
+                                      left: w * 0.02, right: w * 0.02),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    color: Colors.grey[200],
+                                  ),
+                                  child: Center(
+                                    child: DropdownButton(
+                                      underline: const SizedBox(),
+                                      isExpanded: true,
+                                      value: selectedRegion,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedRegion = value.toString();
+                                          regionIndex = dropdownRegionList
+                                              .indexOf(value!);
+                                        });
+                                      },
+                                      items: dropdownRegionList.map((e) {
+                                        return DropdownMenuItem(
+                                          value: e,
+                                          child: Text(e),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                            if (region.isNotEmpty || country.isNotEmpty)
+                              SizedBox(height: h * 0.02),
+                            Container(
+                              width: w * 0.9,
+                              height: h * 0.1,
+                              padding: EdgeInsets.only(
+                                  left: w * 0.005, right: w * 0.02),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.grey[200],
+                              ),
+                              child: Center(
+                                child: TextField(
+                                  controller: _companyNameController,
+                                  textInputAction: TextInputAction.next,
+                                  keyboardType: TextInputType.name,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: resString.getCompanyName,
+                                    hintStyle: TextStyle(
+                                      fontSize: w * 0.035,
+                                      color: Colors.grey,
+                                    ),
+                                    prefixIcon: Icon(
+                                      size: w * 0.06,
+                                      Icons.business,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: h * 0.02),
+                            Container(
+                              width: w * 0.9,
+                              height: h * 0.1,
+                              padding: EdgeInsets.only(
+                                  left: w * 0.005, right: w * 0.02),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.grey[200],
+                              ),
+                              child: Center(
+                                child: TextField(
+                                  controller: _positionController,
+                                  textInputAction: TextInputAction.done,
+                                  keyboardType: TextInputType.name,
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: resString.getPosition,
+                                    hintStyle: TextStyle(
+                                      fontSize: w * 0.035,
+                                      color: Colors.grey,
+                                    ),
+                                    prefixIcon: Icon(
+                                      size: w * 0.06,
+                                      Icons.work,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: h * 0.02),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  Text('Rezident', style: TextStyle(fontSize: w * 0.03)),
-                  SizedBox(width: w * 0.03),
-                  Radio(
-                    value: 'nonrezident',
-                    groupValue: selectedOption,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedOption = value!;
-                      });
-                    },
-                  ),
-                  Text('Nonrezident', style: TextStyle(fontSize: w * 0.03)),
                 ],
               ),
-              SizedBox(height: h * 0.02),
-              //if rezident selected then show region and country dropdown
-              if (selectedOption == 'rezident')
-                if (region.isNotEmpty)
-                  Container(
-                    width: w * 0.935,
-                    height: h * 0.08,
-                    padding: EdgeInsets.only(left: w * 0.02, right: w * 0.02),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey[200],
-                    ),
-                    child: Center(
-                      child: DropdownButton(
-                        underline: const SizedBox(),
-                        isExpanded: true,
-                        value: selectedCountry,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedCountry = value.toString();
-                            countryIndex = dropdownCountryList.indexOf(value!);
-                          });
-                        },
-                        items: dropdownCountryList.map((e) {
-                          return DropdownMenuItem(
-                            value: e,
-                            child: Text(e),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-              if (selectedOption != 'rezident')
-                if (region.isNotEmpty)
-                  Container(
-                    width: w * 0.935,
-                    height: h * 0.08,
-                    padding: EdgeInsets.only(left: w * 0.02, right: w * 0.02),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.grey[200],
-                    ),
-                    child: Center(
-                      child: DropdownButton(
-                        underline: const SizedBox(),
-                        isExpanded: true,
-                        value: selectedRegion,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRegion = value.toString();
-                            regionIndex = dropdownRegionList.indexOf(value!);
-                          });
-                        },
-                        items: dropdownRegionList.map((e) {
-                          return DropdownMenuItem(
-                            value: e,
-                            child: Text(e),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-              if (region.isNotEmpty || country.isNotEmpty)
-                SizedBox(height: h * 0.02),
-              Container(
-                width: w * 0.935,
-                height: h * 0.08,
-                padding: EdgeInsets.only(left: w * 0.005, right: w * 0.02),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey[200],
-                ),
-                child: Center(
-                  child: TextField(
-                    controller: _companyNameController,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Company name',
-                      hintStyle: TextStyle(
-                        fontSize: w * 0.03,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: Icon(
-                        size: w * 0.04,
-                        Icons.business,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: h * 0.02),
-              //position
-              Container(
-                width: w * 0.935,
-                height: h * 0.08,
-                padding: EdgeInsets.only(left: w * 0.005, right: w * 0.02),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey[200],
-                ),
-                child: Center(
-                  child: TextField(
-                    controller: _positionController,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Position',
-                      hintStyle: TextStyle(
-                        fontSize: w * 0.03,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: Icon(
-                        size: w * 0.04,
-                        Icons.work,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: h * 0.02),
-              //submit button
-              Container(
-                width: w * 0.935,
-                height: h * 0.08,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.deepPurple[800],
-                ),
-                child: TextButton(
-                  onPressed: () {
-                    if (_fioController.text.isEmpty) {
-                      showToast('Error', 'FIO is empty', Colors.red);
-                      return;
-                    }
-                    if (_emailController.text.isEmpty) {
-                      showToast('Error', 'Email is empty', Colors.red);
-                      return;
-                    }
-                    if (_phoneNumberController.text.isEmpty) {
-                      showToast('Error', 'Phone number is empty', Colors.red);
-                      return;
-                    }
-                    if (_companyNameController.text.isEmpty) {
-                      showToast('Error', 'Company name is empty', Colors.red);
-                      return;
-                    }
-                    if (_positionController.text.isEmpty) {
-                      showToast('Error', 'Position is empty', Colors.red);
-                      return;
-                    }
-                    if (_originalFile == null) {
-                      showToast('Error', 'Photo is empty', Colors.red);
-                      return;
-                    }
-                    if (selectedOption == 'rezident') {
-                      if (selectedCountry.isEmpty) {
-                        showToast('Error', 'Country is empty', Colors.red);
-                        return;
-                      }
-                    } else {
-                      if (selectedRegion.isEmpty) {
-                        showToast('Error', 'Region is empty', Colors.red);
-                        return;
-                      }
-                    }
-                    addUser();
-                  },
-                  child: Text(
-                    resString.getRegister,
-                    style: TextStyle(
-                      fontSize: w * 0.03,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: h * 0.02),
-            ],
+            ),
           ),
-        ));
+
+          Container(
+            width: w,
+            color: Colors.white,
+            padding: EdgeInsets.only(
+                bottom: h * 0.02, left: w * 0.02, right: w * 0.02),
+            child: Container(
+              width: w * 0.9,
+              height: h * 0.1,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.deepPurple[800],
+              ),
+              child: TextButton(
+                onPressed: () {
+                  if (_fioController.text.isEmpty) {
+                    showToast('Error', 'FIO is empty', Colors.red);
+                    return;
+                  }
+                  if (_emailController.text.isEmpty) {
+                    showToast('Error', 'Email is empty', Colors.red);
+                    return;
+                  }
+                  if (_phoneNumberController.text.isEmpty) {
+                    showToast('Error', 'Phone number is empty', Colors.red);
+                    return;
+                  }
+                  if (_companyNameController.text.isEmpty) {
+                    showToast('Error', 'Company name is empty', Colors.red);
+                    return;
+                  }
+                  if (_positionController.text.isEmpty) {
+                    showToast('Error', 'Position is empty', Colors.red);
+                    return;
+                  }
+                  if (_originalFile == null) {
+                    showToast('Error', 'Photo is empty', Colors.red);
+                    return;
+                  }
+                  if (selectedOption == 'rezident') {
+                    if (selectedCountry.isEmpty) {
+                      showToast('Error', 'Country is empty', Colors.red);
+                      return;
+                    }
+                  } else {
+                    if (selectedRegion.isEmpty) {
+                      showToast('Error', 'Region is empty', Colors.red);
+                      return;
+                    }
+                  }
+                  addUser();
+                },
+                child: Text(
+                  resString.getRegister,
+                  style: TextStyle(
+                    fontSize: w * 0.03,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
